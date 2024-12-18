@@ -393,7 +393,6 @@ def main(cfg: DictConfig) -> None:
                             info = accelerator.reduce(info, reduction="mean")
                             accelerator.log(info)
                             logging_step += 1
-                            print(logging_step)
                             info = defaultdict(list)
 
         # Save the model at regular intervals, not just every epoch
