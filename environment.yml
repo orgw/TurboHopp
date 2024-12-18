@@ -1,4 +1,4 @@
-name: diffhopp_rl
+name: turbohopp
 channels:
   - defaults
   - bioconda
@@ -191,4 +191,4 @@ dependencies:
       - widgetsnbextension==4.0.10
       - yarl==1.9.4
       - zipp==3.18.1
-prefix: /data/aigen/envs/diffhopp_rl
+prefix: /data/aigen/envs/turbohopp
