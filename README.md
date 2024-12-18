@@ -2,6 +2,18 @@
 
 Official implementation of ["TurboHopp: Accelerated Molecule Scaffold Hopping with Consistency Models"](https://arxiv.org/abs/2410.20660).
 
+## Citation
+
+If you use this code in your research, please cite our paper:
+
+```bibtex
+@article{turbohopp2024,
+  title={TurboHopp: Accelerated Molecule Scaffold Hopping with Consistency Models},
+  author={}, # Add authors
+  journal={arXiv preprint arXiv:2410.20660},
+  year={2024}
+}
+```
 ## Repository Structure
 ```
 ├── configs/           # Configuration files for training and evaluation
@@ -52,34 +64,6 @@ python evaluate_consistency.py \
     --dataset pdbbind_filtered
 ```
 
-## Example Config
-
-Basic configuration for evaluation:
-```yaml
-# config.yaml
-model:
-  architecture: "GVP"
-  num_layers: 6
-  attention: true
-
-sampling:
-  molecules_per_pocket: 10
-  batch_size: 512
-  find_best: true
-```
-
-## Citation
-
-If you use this code in your research, please cite our paper:
-
-```bibtex
-@article{turbohopp2024,
-  title={TurboHopp: Accelerated Molecule Scaffold Hopping with Consistency Models},
-  author={}, # Add authors
-  journal={arXiv preprint arXiv:2410.20660},
-  year={2024}
-}
-```
 
 ## Acknowledgments
 
