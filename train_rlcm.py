@@ -114,7 +114,9 @@ class TrainingConfig:
     check_val_every_n_epoch: Optional[int] = None
 
 @hydra.main(
-    version_base=None, config_path="./configs", config_name="config_rlcm_docking"
+    version_base=None, 
+    config_path=None,  # Set to None to allow absolute paths
+    config_name=None   # Set to None since we'll specify it via command line
 )
 def main(cfg: DictConfig) -> None:
     # accelerate stuff
