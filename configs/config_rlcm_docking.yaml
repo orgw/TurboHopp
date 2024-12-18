@@ -1,5 +1,5 @@
 pretrained_path: "/data/aigen/consistency/training/checkpoints/20240402/ver_dist_loss_gvp_100/step_best/latest-epoch=4099-step=24600.ckpt"
-rl_trained_path: "/data/aigen/consistency/ppo/ckpts/50step_200totalepoch_3reward_epoch_190.ckpt"
+# rl_trained_path: "/data/aigen/consistency/ppo/ckpts/50step_200totalepoch_3reward_epoch_190.ckpt"
 training_logdir: "/data/aigen/consistency/logs"
 wandb_name: "50step_200totalepoch_dockingreward_fixed"
 wandb_project: "turbohopp_rl_crossdocked"
