@@ -9,7 +9,7 @@ If you use this code in your research, please cite our paper:
 ```bibtex
 @article{turbohopp2024,
   title={TurboHopp: Accelerated Molecule Scaffold Hopping with Consistency Models},
-  author={}, # Add authors
+  author={Yoo, Kiwoong and Oertell, Owen and Lee, Junhyun and Lee, Sanghoon and Kang, Jaewoo}, # Add authors
   journal={arXiv preprint arXiv:2410.20660},
   year={2024}
 }
