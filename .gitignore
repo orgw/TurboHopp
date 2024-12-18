@@ -19,4 +19,5 @@ env/
 .idea/
 
 #hydra outputs
-./outputs
+outputs/
+outputs/*
