@@ -48,7 +48,11 @@ python train_consistency.py --config configs/train_config.yaml
 ### Training with RL
 For a pretrained consistency model checkpoint:
 ```bash
+<<<<<<< HEAD
 python script.py --config ./configs/config_rlcm_docking.yaml
+=======
+python train_rlcm.py 
+>>>>>>> 584f1e2d296a15872c77c44a258593807218c86a
 ```
 
 ### Evaluation
