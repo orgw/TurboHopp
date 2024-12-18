@@ -17,3 +17,6 @@ env/
 # IDE settings
 .vscode/
 .idea/
+
+#hydra outputs
+./outputs
