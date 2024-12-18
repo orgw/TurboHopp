@@ -8,17 +8,17 @@ import tqdm
 from openbabel import openbabel
 from rdkit import RDLogger
 from tqdm import tqdm
-from models_consistency import *
+from consistency.models_consistency import *
 from train_consistency import *
-from _util_consistency import *
-from rl_training_utils import *
+from utils._util_consistency import *
+from utils.rl_training_utils import *
 import torch
 from collections import defaultdict
 from random import shuffle
 from torch_geometric.data import Batch
 import pdb
 from torch_geometric.loader import DataLoader
-import docking_posecheck_utils
+import utils.docking_posecheck_utils as docking_posecheck_utils
 from collections import OrderedDict
 import pickle
 
@@ -114,7 +114,7 @@ class TrainingConfig:
     check_val_every_n_epoch: Optional[int] = None
 
 @hydra.main(
-    version_base=None, config_path=".", config_name="config_rlcm_docking"
+    version_base=None, config_path="./configs", config_name="config_rlcm_docking"
 )
 def main(cfg: DictConfig) -> None:
     # accelerate stuff

@@ -12,10 +12,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import Draw
-from _util_consistency import get_datamodule, get_consistency_models, ema_decay_rate_schedule
+from utils._util_consistency import get_datamodule, get_consistency_models, ema_decay_rate_schedule
 from diffusion_hopping.model.consistency_lightning import ConsistencyDiffusionHoppingModel
 from diffusion_hopping.model import util as util
-from models_consistency import *
+from consistency.models_consistency import *
 import argparse
 from types import SimpleNamespace
 import wandb
@@ -471,7 +471,7 @@ if __name__ == "__main__":
     torch.set_float32_matmul_precision('medium')    
     
     parser = argparse.ArgumentParser(description='Training script for consistency models.')
-    parser.add_argument('--config', type=str, default='config_consistency.yaml', help='Path to config file')
+    parser.add_argument('--config', type=str, default='configs/config_consistency.yaml', help='Path to config file')
     args = parser.parse_args()
 
     # Load config from YAML

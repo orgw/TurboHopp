@@ -11,7 +11,7 @@ from meeko import MoleculePreparation, PDBQTWriterLegacy
 from queue import Queue
 from threading import Thread, Lock
 
-from _util_consistency import *
+from utils._util_consistency import *
 # from posecheck import PoseCheck
 import logging
 import os 

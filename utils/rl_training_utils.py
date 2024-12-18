@@ -8,9 +8,9 @@ import tqdm
 from openbabel import openbabel
 from rdkit import RDLogger
 from tqdm import tqdm
-from models_consistency import *
+from consistency.models_consistency import *
 from train_consistency import *
-from _util_consistency import *
+from utils._util_consistency import *
 from torch_scatter import scatter_mean
 import itertools
 import pdb
@@ -20,7 +20,7 @@ from multiprocessing import Pool
 import numpy as np
 from collections import deque
 ###########docking tools#############
-from docking_posecheck_utils import *
+from utils.docking_posecheck_utils import *
 import multiprocessing
 
 class PerIDStatTracker:

@@ -7,7 +7,7 @@ from typing import Iterable, Optional, Union
 import torch
 from torch import Tensor, nn
 from tqdm.auto import tqdm
-from models_consistency import *
+from consistency.models_consistency import *
 from train_consistency import *
 from _util_consistency import *
 import time
