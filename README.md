@@ -13,10 +13,14 @@ Official implementation of ["TurboHopp: Accelerated Molecule Scaffold Hopping wi
 └── evaluate_consistency.py # Evaluation script
 ```
 
-## Installation
+## Environment Setup
 
-The conda environment is specified in `environment.yml`. To install:
+This code was developed and tested with:
+- CUDA 11.8
+- Python 3.9
+- PyTorch 2.0.1
 
+To install the environment:
 ```bash
 conda env create -f environment.yml
 conda activate turbohopp
@@ -46,6 +50,22 @@ python evaluate_consistency.py \
     --batch_size 512 \
     --mode train \
     --dataset pdbbind_filtered
+```
+
+## Example Config
+
+Basic configuration for evaluation:
+```yaml
+# config.yaml
+model:
+  architecture: "GVP"
+  num_layers: 6
+  attention: true
+
+sampling:
+  molecules_per_pocket: 10
+  batch_size: 512
+  find_best: true
 ```
 
 ## Citation
