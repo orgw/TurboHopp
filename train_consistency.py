@@ -1,4 +1,4 @@
-from lightning import  LightningModule, Trainer, seed_everything
+from lightning import LightningModule, Trainer, seed_everything
 from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 import torch
@@ -12,13 +12,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import Draw
-from _util_consistency import  get_datamodule, get_consistency_models, ema_decay_rate_schedule
+from _util_consistency import get_datamodule, get_consistency_models, ema_decay_rate_schedule
 from diffusion_hopping.model.consistency_lightning import ConsistencyDiffusionHoppingModel
 from diffusion_hopping.model import util as util
 from models_consistency import *
 import argparse
 from types import SimpleNamespace
 import wandb
+import yaml
+import os
 
 image_to_tensor = ToTensor()
 
@@ -156,22 +158,15 @@ class LitConsistencyModelConfig:
     student_model_ema_decay_rate: float = 0.999943
     lr: float = 1e-3
     betas: Tuple[float, float] = (0.9, 0.995)
-    # betas: Tuple[float, float] = (0.5, 0.999)
-    # sample_every_n_steps: int = 500
     num_samples: int = 8
     sigma_min: float = 0.002
     sigma_max: float = 80.0
-    # sigma_max: float = 1.0
-    # sigma_max: float = 10
     rho: float = 7.0
-    # rho: float = 1.0
     sigma_data: float = 0.5
     initial_timesteps: int = 2
     final_timesteps: int = 150
     lr_patience: int = 100
     lr_cooldown: int = 100
-    # lr_scheduler_start_factor: float = 1e-5
-    # lr_scheduler_iters: int = 10_000
 
 class LitConsistencyModel(LightningModule):
     def __init__(
@@ -337,11 +332,9 @@ class LitConsistencyModel(LightningModule):
         x_loss = F.mse_loss(x_output.predicted, x_output.target)
         pos_loss = F.mse_loss(pos_output.predicted, pos_output.target)
         # dist_loss= F.mse_loss(pred_dismat,target_dismat)
-
         # total_loss = x_loss + pos_loss + dist_loss
         total_loss = x_loss + pos_loss 
-        
-        # Logging the validation loss and other relevant metrics but not backpropagating or optimizing
+
         self.log_dict({
             "val_total_loss": total_loss,
             "val_x_loss": x_loss,
@@ -350,6 +343,7 @@ class LitConsistencyModel(LightningModule):
             # Optionally include num_timesteps if it's relevant for validation
             "num_timesteps": x_output.num_timesteps,
         }, on_epoch=True, logger=True, prog_bar=True, batch_size=batch_size, sync_dist = True)
+
         if self._run_validation:
             self.analyse_samples(batch, batch_idx)
         # Optionally return whatever you might need for validation_epoch_end hooks
@@ -367,10 +361,6 @@ class LitConsistencyModel(LightningModule):
             # else:
             sampling_sigmas= reversed(sampling_sigmas)
             # sampling_sigmas[-1] += 1e-8  
-
-            # print('sampling single sigma :', sampling_sigmas[-1])
-            
-            # for sampling_sigmas in sampling_sampling_sigmas:
 
             sample_results = self.consistency_sampling(self.student_model,batch,sampling_sigmas)
             final_output = sample_results[-1]
@@ -407,56 +397,42 @@ class LitConsistencyModel(LightningModule):
             if isinstance(logger, pl.loggers.WandbLogger):
                 logger.log_image(key="test_set_images", images=images, caption=captions)
 
+@dataclass
+class TrainingConfig:
+    model_config: Any
+    consistency_training: ConsistencyTraining_DiffHopp
+    consistency_sampling: ConsistencySamplingAndEditing_DiffHopp
+    lit_cm_config: LitConsistencyModelConfig
+    seed: int
+    ckpt_dir: str
+    wandb_dir: str
+    devices: List[int]
+    check_val_every_n_epoch: int
+    wandb_logging: bool
+
+    def __post_init__(self):
+        current_date = datetime.now().strftime("%Y%m%d")
+        self.model_ckpt_path = f"{self.ckpt_dir}/{current_date}/ver_dist_loss_gvp_{self.lit_cm_config.final_timesteps}"
+
 def get_callbacks(model_ckpt_path):
-    # val_checkpoint = ModelCheckpoint(
-    #     dirpath="/data/aigen/consistency/training/checkpoints/ver_dist_loss_gvp_150/val_best",
-    #     filename="epoch={epoch}-step={step}-val_total_loss={val_total_loss:.3f}",
-    #     monitor="val_total_loss",  # Changed from "loss/val" to "val_total_loss" as logged
-    #     mode="min",
-    #     auto_insert_metric_name=False,
-    #     save_top_k=100,
-
-    # )
-    # train_checkpoint = ModelCheckpoint(
-    #     dirpath="/data/aigen/consistency/training/checkpoints/ver_dist_loss_gvp_150/train_best",
-    #     filename="epoch={epoch}-step={step}-train_total_loss={train_total_loss:.3f}",
-    #     monitor="train_total_loss",  # Changed from "loss/val" to "val_total_loss" as logged
-    #     mode="min",
-    #     auto_insert_metric_name=False,
-    #     save_top_k=10,
-
-    # )
-    # latest_checkpoint = ModelCheckpoint(
-    #     dirpath="/data/aigen/consistency/training/checkpoints/ver_dist_loss_gvp_150/step_best",
-    #     filename="latest-{epoch}-{step}",
-    #     every_n_epochs=100,
-    #     save_top_k= -1
-        
-    # )
     latest_checkpoint = ModelCheckpoint(
         dirpath=f"{model_ckpt_path}/step_best",
         filename="latest-{epoch}-{step}",
         every_n_epochs=50,
         save_top_k=-1
     )
-    # return [val_checkpoint, train_checkpoint, latest_checkpoint]
     return [latest_checkpoint]
 
-
-
 def run_training(config):
-
     seed_everything(config.seed)
-        # Conditionally initialize wandb based on the wandb_logging flag
+    
     if config.wandb_logging:
-        os.environ['WANDB_DIR'] = '/data/aigen/consistency'
+        os.environ['WANDB_DIR'] = config.wandb_dir
         run = wandb.init(project="diffusion_hopping_consistency")
-
     else:
         run = wandb.init(project="diffusion_hopping_consistency", mode="disabled")
 
-    # run = wandb.init(project="diffusion_hopping_consistency", mode="disabled")
-    student_model, _, teacher_model = get_consistency_models(T= config.lit_cm_config.final_timesteps)
+    student_model, _, teacher_model = get_consistency_models(T=config.lit_cm_config.final_timesteps)
 
     lit_cm = LitConsistencyModel(
         config.consistency_training,
@@ -468,101 +444,86 @@ def run_training(config):
     
     wandb_logger = WandbLogger(experiment=run) 
     wandb_logger.watch(lit_cm)
-    print("checkpoint path is: ", config.model_ckpt_path)
-    trainer= Trainer(
+    # print("checkpoint path is: ", config.model_ckpt_path)
+    trainer = Trainer(
         max_steps=1_000_000,
         precision="32-true",
         log_every_n_steps=1, 
         logger=wandb_logger,
         accelerator="gpu",
-        callbacks = get_callbacks(config.model_ckpt_path),
-        ###################################################################doing subset#########################
-        # limit_val_batches=0.2,
-        devices=config.device,
-        # strategy='ddp_find_unused_parameters_true',
-        strategy= 'ddp' if len(config.device)>1 else 'auto',
+        callbacks=get_callbacks(config.model_ckpt_path),
+        devices=config.devices,
+        strategy='ddp' if len(config.devices)>1 else 'auto',
         check_val_every_n_epoch=config.check_val_every_n_epoch,
-        default_root_dir = config.model_ckpt_path)
-        # max_epochs= config.max_epochs)
+        default_root_dir=config.model_ckpt_path)
 
     data_module = get_datamodule(
-    config.model_config.dataset_name, batch_size=config.model_config.batch_size // trainer.num_devices
+        config.model_config.dataset_name, 
+        batch_size=config.model_config.batch_size // trainer.num_devices,
+        data_dir=config.model_config.data_dir
     )
     data_module.setup(stage="fit")
     lit_cm.setup_metrics(get_train_smiles_consistency(data_module.train_dataset))
-    trainer.fit(lit_cm, data_module.train_dataloader(), data_module.val_dataloader(), )
+    trainer.fit(lit_cm, data_module.train_dataloader(), data_module.val_dataloader())
 
 if __name__ == "__main__":
     disable_obabel_and_rdkit_logging()
     torch.set_float32_matmul_precision('medium')    
+    
     parser = argparse.ArgumentParser(description='Training script for consistency models.')
-    parser.add_argument('--ckpt_dir', type=str, default='/data/aigen/consistency/training/checkpoints', help='Base directory for saving checkpoints.')
-    parser.add_argument('--final_timesteps', type=int, default=100, help='Number of final timesteps for the model.')
-    parser.add_argument('--batch_size', type=int, default=20, help='Number of final timesteps for the model.')
-    parser.add_argument('--devices', type=str, default='0', help='Comma-separated list of device indices for training, e.g., "0,1,2,3".')
-    parser.add_argument('--wandb_logging', action='store_true', help='Enable WandB logging if set, otherwise disabled.')
-
+    parser.add_argument('--config', type=str, default='config_consistency.yaml', help='Path to config file')
     args = parser.parse_args()
-    args.devices = [int(idx) for idx in args.devices.split(',')]
 
+    # Load config from YAML
+    with open(args.config, 'r') as f:
+        yaml_config = yaml.safe_load(f)
+    
+    # Create model config with explicit float conversion for numeric values
     model_config = SimpleNamespace(
-    architecture=Architecture.GVP,
-    seed=1,
-    dataset_name="pdbbind_filtered",
-    condition_on_fg=False,
-    batch_size=args.batch_size,
-    T=args.final_timesteps,
-    lr=1e-3,
-    num_layers=6,
-    joint_features=128,
-    hidden_features=256,
-    edge_cutoff=(None, 5, 5),
+        architecture=Architecture.GVP,
+        seed=int(yaml_config['seed']),
+        data_dir = yaml_config['model_config']['data_dir'],
+        dataset_name=yaml_config['model_config']['dataset_name'],
+        condition_on_fg=yaml_config['model_config']['condition_on_fg'],
+        batch_size=int(yaml_config['batch_size']),
+        T=int(yaml_config['final_timesteps']),
+        lr=float(yaml_config['model_config']['lr']),  
+        num_layers=int(yaml_config['model_config']['num_layers']),
+        joint_features=int(yaml_config['model_config']['joint_features']),
+        hidden_features=int(yaml_config['model_config']['hidden_features']),
+        edge_cutoff=tuple(yaml_config['model_config']['edge_cutoff']),
+        attention=yaml_config['model_config']['attention']
     )
-    model_config.attention = True
 
-    @dataclass
-    class TrainingConfig:
-        # image_dm_config: ImageDataModuleConfig
-        # unet_config: UNetConfig
-        model_config: None
-        consistency_training: ConsistencyTraining_DiffHopp
-        consistency_sampling: ConsistencySamplingAndEditing_DiffHopp
-        lit_cm_config: LitConsistencyModelConfig
-        # trainer: Trainer
-        seed: int = 42
-        ckpt_dir: str = '/data/aigen/consistency/training/checkpoints'
-        resume_ckpt_path: Optional[str] = None
-        device: Optional[int] = None
-        check_val_every_n_epoch: Optional[int] = None
-        consistency_training: None
-        consistency_sampling: None
-        lit_cm_config: None
-        check_val_every_n_epoch: int = 1
-        wandb_logging: bool = False 
+    # Create LitConsistencyModelConfig with explicit float conversion
+    lit_cm_config = LitConsistencyModelConfig(
+        initial_ema_decay_rate=float(yaml_config['lit_cm_config']['initial_ema_decay_rate']),
+        student_model_ema_decay_rate=float(yaml_config['lit_cm_config']['student_model_ema_decay_rate']),
+        lr=float(yaml_config['lit_cm_config']['lr']),  
+        betas=tuple(float(x) for x in yaml_config['lit_cm_config']['betas']),
+        num_samples=int(yaml_config['lit_cm_config']['num_samples']),
+        sigma_min=float(yaml_config['lit_cm_config']['sigma_min']),
+        sigma_max=float(yaml_config['lit_cm_config']['sigma_max']),
+        rho=float(yaml_config['lit_cm_config']['rho']),
+        sigma_data=float(yaml_config['lit_cm_config']['sigma_data']),
+        initial_timesteps=int(yaml_config['lit_cm_config']['initial_timesteps']),
+        final_timesteps=int(yaml_config['final_timesteps']),
+        lr_patience=int(yaml_config['lit_cm_config']['lr_patience']),
+        lr_cooldown=int(yaml_config['lit_cm_config']['lr_cooldown'])
+    )
 
-        def __post_init__(self):
-            # Format current date
-            current_date = datetime.now().strftime("%Y%m%d")
-            # Update model_ckpt_path to include final_timesteps and date
-            self.model_ckpt_path = f"{self.ckpt_dir}/{current_date}/ver_dist_loss_gvp_{self.lit_cm_config.final_timesteps}"
-            # max_epochs: int = 1000
-                                       
+    # Create final config
     config = TrainingConfig(
-                        model_config=model_config,
-                        # consistency_training=ConsistencyTraining_DiffHopp(final_timesteps=500),
-                        # consistency_training=ConsistencyTraining_DiffHopp(),
-                        consistency_training=ConsistencyTraining_DiffHopp(final_timesteps= args.final_timesteps),
-                        consistency_sampling=ConsistencySamplingAndEditing_DiffHopp(final_timesteps= args.final_timesteps),
-                        # consistency_sampling=ConsistencySamplingAndEditing_DiffHopp(),
-                        # consistency_sampling=ConsistencySamplingAndEditing_DiffHopp(final_timesteps=500),
-                        lit_cm_config=LitConsistencyModelConfig(
-                        # lr_scheduler_iters=300000
-                        final_timesteps= args.final_timesteps
-                        ),
-                        device=args.devices,
-                        # device=[4,5,6,7],
-                        # device=[1],
-                        check_val_every_n_epoch=1,
-                        wandb_logging=args.wandb_logging,
-                        )
+        model_config=model_config,
+        ckpt_dir=yaml_config['ckpt_dir'],
+        wandb_dir=yaml_config['wandb_dir'],
+        consistency_training=ConsistencyTraining_DiffHopp(final_timesteps=int(yaml_config['final_timesteps'])),
+        consistency_sampling=ConsistencySamplingAndEditing_DiffHopp(final_timesteps=int(yaml_config['final_timesteps'])),
+        lit_cm_config=lit_cm_config,
+        seed=int(yaml_config['seed']),
+        devices=yaml_config['devices'],
+        check_val_every_n_epoch=int(yaml_config['check_val_every_n_epoch']),
+        wandb_logging=yaml_config['wandb_logging']
+    )
+
     run_training(config)

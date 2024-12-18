@@ -15,7 +15,7 @@ def get_data_module_choices():
     return choices
 
 
-def get_datamodule(dataset_name: str, batch_size: int = 32):
+def get_datamodule(dataset_name: str, batch_size: int = 32, data_dir: str = "/data/aigen/data"):
     if dataset_name not in get_data_module_choices():
         raise ValueError(f"Unknown dataset name {dataset_name}")
     """Create dataset with given name, e.g. crossdocked_filtered or pdbbind_filtered_full"""
@@ -62,7 +62,7 @@ def get_datamodule(dataset_name: str, batch_size: int = 32):
         raise ValueError("Unknown dataset name")
 
     dataset = dataset_constructor(
-        f"/data/aigen/data/{dataset_name}",
+        f"{data_dir}/{dataset_name}", 
         pre_transform=pre_transform,
         pre_filter=pre_filter,
         batch_size=batch_size,

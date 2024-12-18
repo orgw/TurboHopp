@@ -395,10 +395,6 @@ class ConsistencyTraining_DiffHopp:
 
         return ConsistencyTrainingOutput(next_x, current_x, num_timesteps, sigmas), ConsistencyTrainingOutput(next_pos, current_pos, num_timesteps, sigmas)
 
-
-
-
-
 class ConsistencySamplingAndEditing_DiffHopp:
     """Implements the Consistency Sampling and Zero-Shot Editing algorithms.
 

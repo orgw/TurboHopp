@@ -1,0 +1,38 @@
+# Base directories
+ckpt_dir: '/data/aigen/consistency/training/checkpoints'
+wandb_dir: '/data/aigen/consistency'
+
+# Training parameters
+seed: 42
+final_timesteps: 100
+batch_size: 512
+devices: [0,1,2,3,4,5,7]
+check_val_every_n_epoch: 1
+wandb_logging: false
+
+# Model configuration
+model_config:
+  data_dir: '/data/aigen/data'
+  dataset_name: 'pdbbind_filtered'
+  condition_on_fg: false
+  lr: 0.001  
+  num_layers: 6
+  joint_features: 128
+  hidden_features: 256
+  edge_cutoff: [null, 5, 5]
+  attention: true
+
+# Consistency model configuration
+lit_cm_config:
+  initial_ema_decay_rate: 0.95
+  student_model_ema_decay_rate: 0.999943
+  lr: 0.001  
+  betas: [0.9, 0.995]
+  num_samples: 8
+  sigma_min: 0.002
+  sigma_max: 80.0
+  rho: 7.0
+  sigma_data: 0.5
+  initial_timesteps: 2
+  lr_patience: 100
+  lr_cooldown: 100
