@@ -1,6 +1,6 @@
 # TurboHopp: Accelerated Molecule Scaffold Hopping with Consistency Models
 
-Official implementation of ["TurboHopp: Accelerated Molecule Scaffold Hopping with Consistency Models"](https://arxiv.org/abs/2410.20660).
+Official implementation of Neurips 2024 poster ["TurboHopp: Accelerated Molecule Scaffold Hopping with Consistency Models"](https://arxiv.org/abs/2410.20660).
 
 ## Citation
 
